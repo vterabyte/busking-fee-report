@@ -50,13 +50,23 @@
   .chip:has(input:not(:checked)){opacity:.5;text-decoration:line-through}
   .chip .cnt{background:#fff;border:1px solid var(--line);border-radius:10px;padding:0 7px;
         font-size:11px;color:var(--muted)}
-  .rowwrap{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px}
-  .rowtbl{border-collapse:collapse;width:100%;font-size:12.5px}
-  .rowtbl th,.rowtbl td{border:1px solid var(--line);padding:4px 8px;text-align:left;white-space:nowrap}
+  .rowwrap{max-height:320px;overflow-y:auto;overflow-x:hidden;border:1px solid var(--line);border-radius:8px}
+  .rowtbl{border-collapse:collapse;width:100%;font-size:12.5px;table-layout:fixed}
+  .rowtbl th,.rowtbl td{border:1px solid var(--line);padding:4px 8px;text-align:left;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .rowtbl thead th{background:#f1f4f8;position:sticky;top:0;z-index:1}
   .rowtbl td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .rowtbl td.c-chk,.rowtbl th.c-chk{text-align:center;overflow:visible}
   .rowtbl tr.off td{opacity:.4}
   .rowtbl input{cursor:pointer}
+  .rowtbl col.w-chk{width:3%}
+  .rowtbl col.w-id{width:7%}
+  .rowtbl col.w-date{width:8%}
+  .rowtbl col.w-agent{width:17%}
+  .rowtbl col.w-guest{width:15%}
+  .rowtbl col.w-pu{width:23%}
+  .rowtbl col.w-do{width:19%}
+  .rowtbl col.w-amt{width:8%}
   button.run{background:var(--accent);color:#fff;border:none;border-radius:8px;
         padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer}
   button.run:disabled{background:#9db4dd;cursor:not-allowed}
@@ -425,18 +435,24 @@ function buildRowFilter(records){
     + `<span style="color:var(--muted)">（${on}/${disp.length} 件）</span>`
     + '<button class="minibtn" data-act="all">全選択</button>'
     + '<button class="minibtn" data-act="none">全解除</button></div>'
-    + '<div class="rowwrap"><table class="rowtbl"><thead><tr>'
-    + `<th style="width:34px"><input type="checkbox" id="rowMaster"${on===disp.length?' checked':''}></th>`
+    + '<div class="rowwrap"><table class="rowtbl">'
+    + '<colgroup><col class="w-chk"><col class="w-id"><col class="w-date"><col class="w-agent">'
+    + '<col class="w-guest"><col class="w-pu"><col class="w-do"><col class="w-amt"></colgroup>'
+    + '<thead><tr>'
+    + `<th class="c-chk"><input type="checkbox" id="rowMaster"${on===disp.length?' checked':''}></th>`
     + '<th>予約ID</th><th>運行日</th><th>代理店</th><th>団体名</th><th>P/U</th><th>D/O</th><th>金額</th>'
     + '</tr></thead><tbody>'
     + disp.map(r => {
         const ck = rowChoice[r.uid] !== false;
         return `<tr class="${ck?'':'off'}">`
-          + `<td><input type="checkbox" data-uid="${escapeHtml(r.uid)}"${ck?' checked':''}></td>`
-          + `<td>${escapeHtml(r.id)}</td><td>${escapeHtml(normDate(r.date))}</td>`
-          + `<td>${escapeHtml(r.agent)}</td><td>${escapeHtml(r.guest)}</td>`
-          + `<td>${escapeHtml(r.pu)}</td><td>${escapeHtml(r.dropoff)}</td>`
-          + `<td class="num">${fmt(r.amount)}</td></tr>`;
+          + `<td class="c-chk"><input type="checkbox" data-uid="${escapeHtml(r.uid)}"${ck?' checked':''}></td>`
+          + `<td title="${escapeHtml(r.id)}">${escapeHtml(r.id)}</td>`
+          + `<td title="${escapeHtml(normDate(r.date))}">${escapeHtml(normDate(r.date))}</td>`
+          + `<td title="${escapeHtml(r.agent)}">${escapeHtml(r.agent)}</td>`
+          + `<td title="${escapeHtml(r.guest)}">${escapeHtml(r.guest)}</td>`
+          + `<td title="${escapeHtml(r.pu)}">${escapeHtml(r.pu)}</td>`
+          + `<td title="${escapeHtml(r.dropoff)}">${escapeHtml(r.dropoff)}</td>`
+          + `<td class="num" title="${escapeHtml(fmt(r.amount))}">${fmt(r.amount)}</td></tr>`;
       }).join('')
     + '</tbody></table></div>';
 
