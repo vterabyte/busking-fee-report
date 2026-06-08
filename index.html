@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>料金報告書 作成（CSV → PDF）</title>
-<!-- CSV パーサ（ブラウザ内完結・データは外部送信しません） -->
+<!-- CSV パーサ / PDF 生成（すべてブラウザ内完結・データは外部送信しません） -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
   /* ============ 画面UI（操作部・印刷では非表示） ============ */
   :root{
@@ -58,6 +60,8 @@
   button.run{background:var(--accent);color:#fff;border:none;border-radius:8px;
         padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer}
   button.run:disabled{background:#9db4dd;cursor:not-allowed}
+  button.ghost{background:#fff;border:1px solid var(--line);border-radius:8px;
+        padding:10px 16px;font-size:13px;cursor:pointer;color:var(--ink)}
   .err{background:var(--warnbg);color:var(--warn);border:1px solid #f3c6c0;border-radius:8px;
        padding:10px 14px;margin-bottom:14px;font-size:13px;white-space:pre-wrap}
   .hidden{display:none}
@@ -160,9 +164,10 @@
     <div id="rowFilter" style="margin-top:14px"></div>
     <div id="warn" class="err hidden" style="margin-top:14px"></div>
     <div class="toolbar" style="margin-top:16px">
-      <button class="run" id="printBtn">🖨 印刷 / PDF 保存</button>
-      <span class="hint" style="font-size:12px;color:var(--muted)">
-        印刷ダイアログで「PDF に保存」、用紙=A4・向き=横 を選んでください。</span>
+      <button class="run" id="dlBtn">⬇ PDF をダウンロード</button>
+      <button class="ghost" id="printBtn">🖨 印刷でPDF（高品質）</button>
+      <span class="hint" id="dlHint" style="font-size:12px;color:var(--muted)">
+        代理店ごとに1ファイル、自動でダウンロードされます。</span>
     </div>
   </div>
 
@@ -228,6 +233,7 @@ fileInput.addEventListener('change', () => handleFiles(fileInput.files));
 document.getElementById('encoding').addEventListener('change', reparseAll);
 document.getElementById('issueDate').addEventListener('change', render);
 document.getElementById('printBtn').addEventListener('click', () => window.print());
+document.getElementById('dlBtn').addEventListener('click', downloadPdfs);
 
 function handleFiles(list){
   const files = Array.from(list);
@@ -537,6 +543,51 @@ function rowHtml(r){
     <td class="c-do" title="${escapeHtml(r.dropoff)}">${escapeHtml(r.dropoff)}</td>
     <td class="c-amount">${fmt(r.amount)}</td>
   </tr>`;
+}
+
+/* ============ ワンクリックPDFダウンロード（代理店ごとに1ファイル） ============ */
+async function downloadPdfs(){
+  const sheets = Array.from(document.querySelectorAll('#sheets .sheet'));
+  if(!sheets.length){ alert('出力する案件がありません。案件にチェックを入れてください。'); return; }
+  if(typeof html2canvas === 'undefined' || !window.jspdf){
+    alert('PDF生成ライブラリの読み込みに失敗しました。通信環境をご確認のうえ再読み込みしてください。');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const btn = document.getElementById('dlBtn');
+  const hint = document.getElementById('dlHint');
+  btn.disabled = true;
+  const compact = issueCompact();
+
+  try{
+    for(let i=0;i<sheets.length;i++){
+      const sheet = sheets[i];
+      const agent = (sheet.querySelector('.agent-name')?.textContent || '料金報告書').trim();
+      hint.textContent = `生成中… (${i+1}/${sheets.length}) ${agent}`;
+
+      // 画面表示の見た目どおりに高解像度でキャプチャ（JPEGで軽量化）
+      const canvas = await html2canvas(sheet, {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false});
+      const img = canvas.toDataURL('image/jpeg', 0.92);
+
+      // A4 横に内接させて配置
+      const pdf = new jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
+      const pageW = pdf.internal.pageSize.getWidth();   // 297
+      const pageH = pdf.internal.pageSize.getHeight();  // 210
+      const margin = 8;
+      let w = pageW - margin*2;
+      let h = canvas.height * w / canvas.width;
+      if(h > pageH - margin*2){ h = pageH - margin*2; w = canvas.width * h / canvas.height; }
+      pdf.addImage(img, 'JPEG', (pageW - w)/2, margin, w, h);
+
+      pdf.save('料金報告書_' + sanitize(agent) + (compact ? '_' + compact : '') + '.pdf');
+      await new Promise(r => setTimeout(r, 300)); // 連続DLの取りこぼし防止
+    }
+    hint.textContent = `${sheets.length}件のPDFをダウンロードしました。`;
+  }catch(e){
+    hint.textContent = '生成に失敗しました: ' + (e && e.message ? e.message : e);
+  }finally{
+    btn.disabled = false;
+  }
 }
 
 /* ============ ユーティリティ ============ */
