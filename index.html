@@ -409,7 +409,7 @@ function render(){
 
   // PDF 既定ファイル名（ブラウザの「PDFに保存」既定名に使われる）
   const first = sortedAgents[0] || '料金報告書';
-  document.title = '料金報告書_' + sanitize(first) + '_' + issueCompact();
+  document.title = '料金報告書_' + sanitize(first) + '御中_' + issueCompact();
 }
 
 // 案件（予約）チェックリスト。チェックした行だけがプレビュー（=PDF）に出る。
@@ -579,7 +579,7 @@ async function downloadPdfs(){
       if(h > pageH - margin*2){ h = pageH - margin*2; w = canvas.width * h / canvas.height; }
       pdf.addImage(img, 'JPEG', (pageW - w)/2, margin, w, h);
 
-      pdf.save('料金報告書_' + sanitize(agent) + (compact ? '_' + compact : '') + '.pdf');
+      pdf.save('料金報告書_' + sanitize(agent) + '御中' + (compact ? '_' + compact : '') + '.pdf');
       await new Promise(r => setTimeout(r, 300)); // 連続DLの取りこぼし防止
     }
     hint.textContent = `${sheets.length}件のPDFをダウンロードしました。`;
