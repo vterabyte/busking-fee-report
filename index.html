@@ -6,7 +6,8 @@
 <title>料金報告書 作成（CSV → PDF）</title>
 <!-- CSV パーサ / PDF 生成（すべてブラウザ内完結・データは外部送信しません） -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<!-- html2canvas-pro: 無印1.4.1はoklch等の新CSS色で例外を投げる（拡張機能が注入するCSSで発生）ため対応フォークを使用 -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.11/dist/html2canvas-pro.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
   /* ============ 画面UI（操作部・印刷では非表示） ============ */
